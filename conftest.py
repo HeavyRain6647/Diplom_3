@@ -1,17 +1,32 @@
+# conftest.py
 import pytest
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.firefox import GeckoDriverManager
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.firefox.service import Service as FirefoxService
+import requests
+import random
+import string
+from data import Urls
 
-@pytest.fixture(params=["chrome", "firefox"])
-def driver(request):
-    if request.param == "chrome":
-        driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
-    elif request.param == "firefox":
-        driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
-    
-    driver.maximize_window()
+def generate_random_string(length=10):
+    return ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
+
+@pytest.fixture(scope='function')
+def driver():
+    driver = webdriver.Chrome()
     yield driver
     driver.quit()
+
+@pytest.fixture(scope="function")
+def user():
+    """Создает пользователя через API и удаляет его после теста."""
+    email = f"{generate_random_string()}@ya.ru"
+    password = generate_random_string(8)
+    name = generate_random_string()
+    
+    payload = {"email": email, "password": password, "name": name}
+    response = requests.post(Urls.API_REGISTER, json=payload)
+    token = response.json().get("accessToken")
+    
+    yield email, password
+    
+    if token:
+        requests.delete(Urls.API_USER, headers={"Authorization": token})
