@@ -5,25 +5,25 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from webdriver_manager.firefox import GeckoDriverManager
-from pages.main_page import MainPage # Импортируем MainPage
+from pages.main_page import MainPage
 import requests
 import random
 import string
 from data import Urls
 
 def pytest_addoption(parser):
-    # ... (код для выбора браузера остается без изменений)
     parser.addoption(
         '--browser_name', action='store', default='chrome',
         help="Выберите браузер: chrome или firefox"
     )
 
-# ... (фикстура driver и user остаются без изменений)
+def generate_random_string(length=10):
+    return ''.join(random.choice(string.ascii_lowercase) for _ in range(length))
+
 @pytest.fixture(scope='function')
 def driver(request):
-    # ... (код фикстуры driver)
     browser_name = request.config.getoption("browser_name")
-    # ...
+    driver = None
     if browser_name.lower() == "chrome":
         options = webdriver.ChromeOptions()
         options.add_argument("--start-maximized")
@@ -31,25 +31,31 @@ def driver(request):
     elif browser_name.lower() == "firefox":
         options = webdriver.FirefoxOptions()
         driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
-    # ...
+    
     yield driver
     driver.quit()
 
 @pytest.fixture(scope="function")
 def user():
-    # ... (код фикстуры user)
-    # ...
+    #
+    # --- ВОССТАНАВЛИВАЕМ ПОЛНЫЙ КОД ФИКСТУРЫ USER ---
+    #
+    email = f"{generate_random_string()}@ya.ru"
+    password = generate_random_string(8)
+    name = generate_random_string()
+    
+    payload = {"email": email, "password": password, "name": name}
+    response = requests.post(Urls.API_REGISTER, json=payload)
+    token = response.json().get("accessToken")
+    
     yield email, password
-    # ...
+    
+    if token:
+        requests.delete(Urls.API_USER, headers={"Authorization": token})
 
-# --- НОВАЯ ФИКСТУРА ДЛЯ СОЗДАНИЯ ЗАКАЗА ---
 @pytest.fixture(scope="function")
 def created_order(driver, user):
-    """
-    Логинится под пользователем, создает один заказ и возвращает его номер.
-    """
-    # Эта фикстура использует другие фикстуры: driver и user
-    from pages.login_page import LoginPage # Локальный импорт, чтобы не было циклических зависимостей
+    from pages.login_page import LoginPage
     
     email, password = user
     main_page = MainPage(driver)

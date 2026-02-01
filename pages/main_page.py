@@ -5,7 +5,7 @@ from locators import MainPageLocators
 from data import Urls
 
 class MainPage(BasePage):
-    @allure.step("Ожидание загрузки ингредиентов на главной странице")
+    @allure.step("Ожидание загрузки ингредиентов")
     def wait_for_ingredients_load(self):
         self.find_element(MainPageLocators.INGREDIENTS_SECTION)
 
@@ -22,14 +22,16 @@ class MainPage(BasePage):
     def click_personal_account_link(self):
         self.wait_and_click(MainPageLocators.PERSONAL_ACCOUNT_LINK)
 
-    @allure.step("Создание заказа (клик по ингредиентам и кнопке 'Оформить заказ')")
+    @allure.step("Создание заказа (надежная версия)")
     def create_order(self):
-        self.wait_and_click(MainPageLocators.INGREDIENT_BUN)
-        self.wait_and_click(MainPageLocators.MODAL_CLOSE_BUTTON)
-        self.wait_and_click(MainPageLocators.INGREDIENT_SAUCE)
-        self.wait_and_click(MainPageLocators.MODAL_CLOSE_BUTTON)
+        # Перетаскиваем булку и ЖДЕМ ее появления в конструкторе
+        self.drag_and_drop_element(MainPageLocators.INGREDIENT_BUN, MainPageLocators.CONSTRUCTOR_AREA)
+        self.find_element(MainPageLocators.CONSTRUCTOR_BUN_ITEM)
+
+        # Теперь, когда кнопка должна быть активна, нажимаем
         self.wait_and_click(MainPageLocators.CREATE_ORDER_BUTTON)
         
+        # Получаем номер заказа и закрываем модальное окно
         order_number = self.get_text(MainPageLocators.ORDER_NUMBER_IN_MODAL)
         self.wait_and_click(MainPageLocators.MODAL_CLOSE_BUTTON)
         return order_number

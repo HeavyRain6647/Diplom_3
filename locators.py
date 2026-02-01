@@ -1,7 +1,6 @@
 # locators.py
 from selenium.webdriver.common.by import By
 
-# --- Локаторы Главной страницы ---
 class MainPageLocators:
     LOGIN_TO_ACCOUNT_BUTTON = (By.XPATH, ".//button[text()='Войти в аккаунт']")
     PERSONAL_ACCOUNT_LINK = (By.XPATH, ".//p[text()='Личный Кабинет']/..")
@@ -20,19 +19,17 @@ class MainPageLocators:
     ORDER_NUMBER_IN_MODAL = (By.XPATH, ".//h2[contains(@class, 'Modal_modal__title')]")
     MODAL_CLOSE_BUTTON = (By.XPATH, ".//button[contains(@class, 'Modal_modal__close')]")
 
-# --- Локаторы Страницы входа ---
 class LoginPageLocators:
     EMAIL_INPUT = (By.XPATH, ".//label[text()='Email']/../input")
     PASSWORD_INPUT = (By.XPATH, ".//label[text()='Пароль']/../input")
     LOGIN_BUTTON = (By.XPATH, ".//button[text()='Войти']")
     REGISTER_LINK = (By.XPATH, ".//a[text()='Зарегистрироваться']")
 
-# --- Локаторы Страницы профиля ---
 class ProfilePageLocators:
     PROFILE_LINK = (By.XPATH, ".//a[text()='Профиль' and contains(@class, 'active')]")
     LOGOUT_BUTTON = (By.XPATH, ".//button[text()='Выход']")
+    ORDER_HISTORY_LINK = (By.XPATH, ".//a[text()='История заказов']")
 
-# --- Локаторы Страницы Ленты Заказов ---
 class OrderFeedPageLocators:
     PAGE_TITLE = (By.XPATH, ".//h1[text()='Лента заказов']")
     STATS_BLOCK = (By.XPATH, ".//div[contains(@class, 'OrderFeed_stats')]")
@@ -40,6 +37,6 @@ class OrderFeedPageLocators:
     TODAY_COUNTER = (By.XPATH, ".//p[text()='Выполнено за сегодня']/following-sibling::p")
     
     @staticmethod
-    def get_order_in_progress_locator(order_number):
+    def get_order_in_feed_locator(order_number):
         number_without_zeros = str(int(order_number))
         return (By.XPATH, f".//p[text()='#{number_without_zeros}']")
