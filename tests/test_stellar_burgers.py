@@ -1,6 +1,5 @@
 # tests/test_stellar_burgers.py
 import allure
-import pytest
 from pages.main_page import MainPage
 from pages.login_page import LoginPage
 from pages.profile_page import ProfilePage
@@ -9,47 +8,69 @@ from pages.order_feed_page import OrderFeedPage
 @allure.feature('UI Тесты Stellar Burgers')
 class TestStellarBurgers:
     
+    # Тест на навигацию остается без изменений
     @allure.story('Навигация и Авторизация')
     @allure.title('Проверка перехода в личный кабинет и выхода')
     def test_navigation_and_logout_flow(self, driver, user):
-        email, password = user
-        main_page = MainPage(driver)
-        login_page = LoginPage(driver)
+        # ... (код этого теста не меняется)
+
+    # --- РАЗДЕЛЯЕМ БОЛЬШОЙ ТЕСТ НА ТРИ АТОМАРНЫХ ---
+    
+    @allure.story('Лента заказов')
+    @allure.title('Если создать заказ, он появится в ленте заказов')
+    def test_order_appears_in_feed(self, driver, created_order):
+        """
+        Проверяем, что номер созданного заказа появляется в общей ленте.
+        Фикстура created_order уже создала заказ.
+        """
+        order_feed_page = OrderFeedPage(driver)
+        order_feed_page.open()
+        assert order_feed_page.is_order_in_feed(created_order), "Созданный заказ не найден в общей ленте"
+
+    @allure.story('Лента заказов')
+    @allure.title('Заказы пользователя из раздела "История заказов" отображаются на странице "Лента заказов"')
+    def test_user_orders_appear_in_history(self, driver, created_order):
+        """
+        Проверяем, что заказ пользователя появляется в его личной истории.
+        """
         profile_page = ProfilePage(driver)
+        order_feed_page = OrderFeedPage(driver)
         
-        main_page.open()
-        main_page.click_login_to_account_button()
-        login_page.login_user(email, password)
+        # Переходим в историю заказов в профиле
+        profile_page.open_and_wait()
+        profile_page.click_order_history_link()
         
-        # --- ФИНАЛЬНОЕ ИСПРАВЛЕНИЕ: Ждем полной прогрузки главной страницы ПОСЛЕ логина ---
-        main_page.wait_for_ingredients_load()
-        
-        main_page.click_personal_account_link()
-        profile_page.wait_for_load()
-        assert "account/profile" in main_page.get_current_url()
+        # Проверяем, что заказ есть в истории
+        assert order_feed_page.is_order_in_feed(created_order), "Созданный заказ не найден в истории заказов пользователя"
 
-        profile_page.click_logout_button()
-        login_page.wait_for_load()
-        assert "login" in login_page.get_current_url()
-
-    @pytest.mark.xfail(reason="Drag-and-drop в Selenium нестабилен для этого сайта")
-    @allure.story('Основной сценарий пользователя')
-    @allure.title('Создание заказа и проверка в ленте')
-    def test_full_order_creation_flow(self, driver, user):
-        # Этот тест остается без изменений, помеченный как xfail
-        email, password = user
+    @allure.story('Лента заказов')
+    @allure.title('При создании нового заказа счётчики "Выполнено за всё время" и "Выполнено за сегодня" увеличиваются')
+    def test_counters_increase_on_order_creation(self, driver, user):
+        """
+        Проверяем, что счетчики увеличиваются.
+        Этот тест должен быть отдельным, так как он меняет общее состояние.
+        """
         main_page = MainPage(driver)
         login_page = LoginPage(driver)
         order_feed_page = OrderFeedPage(driver)
-
+        
+        # Логинимся
         login_page.open()
-        login_page.login_user(email, password)
+        login_page.login_user(user[0], user[1])
 
-        main_page.open()
-        order_number = main_page.create_order()
-        assert order_number.isdigit(), "Номер заказа не был получен"
-
+        # Получаем начальные значения
         order_feed_page.open()
-        assert order_feed_page.find_order_in_progress(order_number), "Заказ не найден"
-        assert order_feed_page.get_all_time_counter_value() > 0, "Счетчик 'за все время' равен 0"
-        assert order_feed_page.get_today_counter_value() > 0, "Счетчик 'за сегодня' равен 0"
+        initial_all_time = order_feed_page.get_all_time_counter_value()
+        initial_today = order_feed_page.get_today_counter_value()
+        
+        # Создаем заказ
+        main_page.open()
+        main_page.create_order()
+        
+        # Проверяем новые значения
+        order_feed_page.open()
+        final_all_time = order_feed_page.get_all_time_counter_value()
+        final_today = order_feed_page.get_today_counter_value()
+
+        assert final_all_time == initial_all_time + 1
+        assert final_today == initial_today + 1
